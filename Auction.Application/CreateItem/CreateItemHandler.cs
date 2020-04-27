@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Auction.Application.CreateItem
 {
-    public class CreateItemHandler : IRequestHandler<CreateItemCommand>
+    public class CreateItemHandler : ICommandHandler<CreateItemCommand>
     {
         private readonly IItemRepository _itemRepository;
 

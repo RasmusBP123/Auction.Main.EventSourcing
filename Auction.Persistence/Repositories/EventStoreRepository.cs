@@ -1,4 +1,6 @@
-﻿using Dapper;
+﻿using Auction.Persistence.Factories;
+using Auction.Persistence.Services;
+using Dapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
@@ -14,24 +16,17 @@ namespace Auction.Persistence.Repositories
 {
     internal class EventStoreRepository : IEventStore
     {
-
         private string EventStoreTableName = "Events";
-
-        private static string EventStoreListOfColumnsInsert = "[Id], [CreatedAt], [Sequence], [Version], [Name], [AggregateId], [Data], [Aggregate]";
-
+        private static string EventStoreListOfColumnsInsert = "[Id], [CreatedAt], [Version], [Name], [AggregateId], [Data], [Aggregate]";
         private static readonly string EventStoreListOfColumnsSelect = $"{EventStoreListOfColumnsInsert},[Sequence]";
 
-        private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings()
-        {
-            TypeNameHandling = TypeNameHandling.All,
-            NullValueHandling = NullValueHandling.Ignore
-        };
+        private readonly ISQLConnectionFactory _connectionFactory;
+        private readonly JsonSerializerService _serializerService;
 
-        private readonly DbEventStorage _context;
-
-        public EventStoreRepository(DbEventStorage context)
+        public EventStoreRepository(ISQLConnectionFactory connectionFactory, JsonSerializerService serializerService)
         {
-            _context = context;
+            _connectionFactory = connectionFactory;
+            _serializerService = serializerService;
         }
 
         public async Task<IReadOnlyCollection<IDomainEvent>> LoadAsync(IEntityId aggregateId)
@@ -45,20 +40,12 @@ namespace Auction.Persistence.Repositories
             query.Append(" WHERE [AggregateId] = @AggregateId ");
             query.Append(" ORDER BY [Version] ASC;");
 
-            using (var connection = new SqlConnection(GetConnectionString()))
+            using (var connection = _connectionFactory.SqlConnection())
             {
-                var events = (await connection.QueryAsync<EventStoreDao>(query.ToString(), aggregateId != null ? new {AggregateId = aggregateId.ToString() } : null)).ToList();
-                var domainEvents = events.Select(TransformEvent).Where(@event => @event != null).ToList().AsReadOnly();
+                var events = (await connection.QueryAsync<EventStoreDao>(query.ToString(), new {AggregateId = aggregateId.ToString() }));
+                var domainEvents = events.Select(_serializerService.TransformEvent).Where(@event => @event != null).ToList().AsReadOnly();
                 return domainEvents;
             }
-        }
-
-        private IDomainEvent TransformEvent(EventStoreDao eventSelected)
-        {
-            var o = JsonConvert.DeserializeObject(eventSelected.Data, _jsonSerializerSettings);
-            var evt = (IDomainEvent)o;
-
-            return evt;
         }
 
         public async Task SaveAsync(IEntityId aggregateId, int originalVersion, IReadOnlyCollection<IDomainEvent> events, string name = "Aggregate name")
@@ -67,31 +54,24 @@ namespace Auction.Persistence.Repositories
                 return;
 
             var query = $@"INSERT INTO {EventStoreTableName} ({EventStoreListOfColumnsInsert})
-                           VALUES (@Id, @CreatedAt, @Sequence, @Version, @Name, @AggregateId, @Data, @Aggregate)";
+                           VALUES (@Id, @CreatedAt, @Version, @Name, @AggregateId, @Data, @Aggregate)";
 
             var listOfEvents = events.Select(ev => new
             {
+                Id = Guid.NewGuid(),
+                Data = JsonConvert.SerializeObject(ev, Formatting.Indented,_serializerService._jsonSerializerSettings),
                 Aggregate = name,
                 ev.CreatedAt,
-                Sequence = 0,
-                Data = JsonConvert.SerializeObject(ev, Formatting.Indented,_jsonSerializerSettings),
-                Id = Guid.NewGuid(),
                 ev.GetType().Name,
                 AggregateId = aggregateId.ToString(),
                 Version = ++originalVersion
             });
 
-            var connectionString = GetConnectionString();
-
-            using(var connection = new SqlConnection(connectionString))
+            using(var connection = _connectionFactory.SqlConnection())
             {
                 await connection.ExecuteAsync(query, listOfEvents);
             }
 
-        }
-        private string GetConnectionString()
-        {
-            return "Server=(localdb)\\MSSQLLocalDB;Database=EventStore;Trusted_Connection=True; MultipleActiveResultSets=true";
         }
     }
 }

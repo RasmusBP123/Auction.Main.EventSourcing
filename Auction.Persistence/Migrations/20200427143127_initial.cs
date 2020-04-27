@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Auction.Persistence.Migrations
 {
-    public partial class init : Migration
+    public partial class initial : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -15,7 +15,8 @@ namespace Auction.Persistence.Migrations
                     Data = table.Column<string>(nullable: true),
                     Version = table.Column<int>(nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(nullable: false),
-                    Sequence = table.Column<int>(nullable: false),
+                    Sequence = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(nullable: true),
                     Aggregate = table.Column<string>(nullable: true),
                     AggregateId = table.Column<string>(nullable: true)

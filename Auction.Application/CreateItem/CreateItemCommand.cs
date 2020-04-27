@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Auction.Application.CreateItem
 {
-    public class CreateItemCommand : IRequest
+    public class CreateItemCommand : ICommand
     {
         public CreateItemCommand(string name, string description, double price)
         {

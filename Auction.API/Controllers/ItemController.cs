@@ -27,25 +27,25 @@ namespace Auction.API.Controllers
             _mediator = mediator;
         }
 
-        [HttpGet("zzz")]
+        [HttpGet("get")]
         public async Task<IActionResult> GetItem()
         {
-            var item = await _queryBus.Send<GetItemQuery, Item>(new GetItemQuery(new Guid("e6bf3034-8f4b-4e9e-aa08-14afc7a0a088")));
+            var item = await _queryBus.Send<GetItemQuery, Item>(new GetItemQuery(new Guid("d147ef22-7ef3-4e51-af47-c80e0e9fdcf1")));
             return Ok(item);
         }
 
         [HttpPost()]
         public async Task<IActionResult> CreateItem()
         {
-            var newCommand = new CreateItemCommand("Vase", "Its big", 2500);
-            await _mediator.Send(newCommand);
+            var newCommand = new CreateItemCommand("Bil", "Volkswagen", 3600000);
+            await _commandBus.Send(newCommand);
             return Ok();
         }
 
         [HttpPost("price")]
         public async Task<IActionResult> PriceRaised()
         {
-            await _mediator.Send(new PriceRaisedCommand(new Guid("e6bf3034-8f4b-4e9e-aa08-14afc7a0a088"), 3000));
+            await _mediator.Send(new PriceRaisedCommand(new Guid("d147ef22-7ef3-4e51-af47-c80e0e9fdcf1"), 52000));
             return Ok();
         }
     }

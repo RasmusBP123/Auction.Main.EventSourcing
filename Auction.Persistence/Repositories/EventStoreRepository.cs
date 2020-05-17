@@ -1,12 +1,9 @@
 ﻿using Auction.Persistence.Factories;
 using Auction.Persistence.Services;
 using Dapper;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -40,7 +37,7 @@ namespace Auction.Persistence.Repositories
             query.Append(" WHERE [AggregateId] = @AggregateId ");
             query.Append(" ORDER BY [Version] ASC;");
 
-            using (var connection = _connectionFactory.SqlConnection())
+            using(var connection = _connectionFactory.SqlConnection())
             {
                 var events = (await connection.QueryAsync<EventStoreDao>(query.ToString(), new {AggregateId = aggregateId.ToString() }));
                 var domainEvents = events.Select(_serializerService.TransformEvent).Where(@event => @event != null).ToList().AsReadOnly();
@@ -71,7 +68,6 @@ namespace Auction.Persistence.Repositories
             {
                 await connection.ExecuteAsync(query, listOfEvents);
             }
-
         }
     }
 }

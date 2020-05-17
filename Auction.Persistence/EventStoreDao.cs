@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Auction.Persistence
 {
-    public class EventStoreDao
+    public class EventStoreDao //Data access object
     {
         public Guid Id { get; set; }
         public string Data { get; set; }

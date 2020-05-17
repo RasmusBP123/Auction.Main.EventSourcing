@@ -1,9 +1,5 @@
 ﻿using Auction.Core;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
-using Tactical.DDD;
 
 namespace Auction.Persistence.Repositories
 {
@@ -15,6 +11,7 @@ namespace Auction.Persistence.Repositories
         {
             _eventStore = eventStore;
         }
+
         public async Task<Item> GetItem(string aggregateId)
         {
             var resultEvents = await _eventStore.LoadAsync(new ItemId(aggregateId));
